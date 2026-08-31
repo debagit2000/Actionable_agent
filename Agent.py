@@ -56,35 +56,26 @@ cipher = Fernet(key)
 
 def call_llm(prompt):
 
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
     payload = {
         "model": MODEL_NAME,
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        "temperature": 0.1
+        "prompt": prompt,
+        "stream": False,
+        "options": {
+            "temperature": 0.1
+        }
     }
 
     response = requests.post(
-        OPENROUTER_URL,
-        headers=headers,
+        OLLAMA_URL,
         json=payload,
-        timeout=120
+        timeout=300
     )
 
     response.raise_for_status()
 
     data = response.json()
 
-    return data['choices'][0]['message']['content']
-
+    return data["response"]
 # =====================================================
 # BASH SCRIPT GENERATION
 # =====================================================
