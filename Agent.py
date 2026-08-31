@@ -184,19 +184,28 @@ def save_script(script):
 
 def execute_script(script_path):
 
-    result = subprocess.run(
-        ["bash", script_path],
-        capture_output=True,
-        text=True,
-        timeout=EXECUTION_TIMEOUT
-    )
+    try:
 
-    return {
-        "return_code": result.returncode,
-        "stdout": result.stdout,
-        "stderr": result.stderr
-    }
+        result = subprocess.run(
+            ["bash", script_path],
+            capture_output=True,
+            text=True,
+            timeout=EXECUTION_TIMEOUT
+        )
 
+        return {
+            "return_code": result.returncode,
+            "stdout": result.stdout,
+            "stderr": result.stderr
+        }
+
+    except subprocess.TimeoutExpired:
+
+        return {
+            "return_code": -1,
+            "stdout": "",
+            "stderr": f"Script timed out after {EXECUTION_TIMEOUT} seconds"
+        }
 # =====================================================
 # LOG SANITIZATION
 # =====================================================
