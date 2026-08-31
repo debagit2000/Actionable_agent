@@ -73,7 +73,7 @@ def call_llm(prompt):
 
     data = response.json()
 
-    return data['choices'][0]['message']
+    return data['choices'][0]['message']['content']
 
 # =====================================================
 # BASH SCRIPT GENERATION
