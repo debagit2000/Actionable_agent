@@ -5,16 +5,17 @@ import re
 import json
 import requests
 import subprocess
-
+from dotenv import load_dotenv
 from datetime import datetime
 from cryptography.fernet import Fernet
+
 
 # =====================================================
 # CONFIGURATION
 # =====================================================
 
-OPENSLATE_URL = "https://YOUR_OPENSLATE_ENDPOINT/v1/chat/completions"
-OPENSLATE_API_KEY = "YOUR_API_KEY"
+OPENROUTER_URL = "https://YOUR_OPENSLATE_ENDPOINT/v1/chat/completions"
+OPENROUTER_API_KEY = "YOUR_API_KEY"
 MODEL_NAME = "YOUR_MODEL"
 
 EXECUTION_TIMEOUT = 300
