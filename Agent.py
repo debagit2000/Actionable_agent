@@ -91,20 +91,12 @@ def generate_bash_script(issue):
     prompt = f"""
 You are a Senior Linux and CloudOps Engineer.
 
-Generate ONLY executable bash script.
+Generate ONLY executable bash script. Which will contain multiple commands and commands should not take more than 30 seconds. Create it wisely as the script output logs will be passed to one another funtion which will take care about the next RCA findings.
 
 Rules:
 1. Output bash script only
 2. Start with #!/bin/bash
 3. No markdown
-4. No explanations
-5. Diagnostic commands only
-6. Read-only commands only
-7. Must contain echo statements
-8. Never modify system configuration
-9. Every command must terminate within 30 seconds
-10. Use timeout 30 for long-running commands
-11. Add echo for each step
 
 Issue:
 
