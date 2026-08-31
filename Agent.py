@@ -102,6 +102,9 @@ Rules:
 6. Read-only commands only
 7. Must contain echo statements
 8. Never modify system configuration
+9. Every command must terminate within 30 seconds
+10. Use timeout 30 for long-running commands
+11. Add echo for each step
 
 Issue:
 
