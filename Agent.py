@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 from datetime import datetime
 from cryptography.fernet import Fernet
 
+load_dotenv()
+
 
 # =====================================================
 # CONFIGURATION
