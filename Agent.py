@@ -59,23 +59,29 @@ def call_llm(prompt):
     payload = {
         "model": MODEL_NAME,
         "prompt": prompt,
-        "stream": False,
-        "options": {
-            "temperature": 0.1
-        }
+        "stream": False
     }
 
-    response = requests.post(
-        OLLAMA_URL,
-        json=payload,
-        timeout=300
-    )
+    try:
 
-    response.raise_for_status()
+        response = requests.post(
+            OLLAMA_URL,
+            json=payload,
+            timeout=300
+        )
 
-    data = response.json()
+        print("HTTP Status:", response.status_code)
+        print("Response:", response.text[:500])
 
-    return data["response"]
+        response.raise_for_status()
+
+        data = response.json()
+
+        return data["response"]
+
+    except Exception as e:
+        print("Ollama Error:", str(e))
+        raise
 # =====================================================
 # BASH SCRIPT GENERATION
 # =====================================================
