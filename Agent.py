@@ -11,6 +11,10 @@ from cryptography.fernet import Fernet
 
 load_dotenv()
 
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_URL = os.getenv("OPENROUTER_URL")
+MODEL_NAME = os.getenv("MODEL_NAME")
+
 
 # =====================================================
 # CONFIGURATION
