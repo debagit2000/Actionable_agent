@@ -14,9 +14,6 @@ from cryptography.fernet import Fernet
 # CONFIGURATION
 # =====================================================
 
-OPENROUTER_URL = "https://openslate.company.com/api/generate"
-OPENROUTER_API_KEY = "YOUR_API_KEY"
-MODEL_NAME = "YOUR_MODEL"
 
 EXECUTION_TIMEOUT = 300
 
@@ -76,7 +73,7 @@ def call_llm(prompt):
 
     data = response.json()
 
-    return data["choices"][0]["message"]["content"]
+    return data['choices'][0]['message']
 
 # =====================================================
 # BASH SCRIPT GENERATION
