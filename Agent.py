@@ -92,7 +92,7 @@ def generate_bash_script(issue):
 You are a Senior Linux and CloudOps Engineer.
 
 Generate ONLY executable bash script. Which will contain multiple commands and commands should not take more than 30 seconds. Create it wisely as the script output logs will be passed to one another funtion which will take care about the next RCA findings.
-
+Check multiple checkpoints as much as you can so no checkpoints gets missed. 
 Rules:
 1. Output bash script only
 2. Start with #!/bin/bash
