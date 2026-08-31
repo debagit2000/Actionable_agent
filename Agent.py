@@ -14,7 +14,7 @@ from cryptography.fernet import Fernet
 # CONFIGURATION
 # =====================================================
 
-OPENROUTER_URL = "https://YOUR_OPENSLATE_ENDPOINT/v1/chat/completions"
+OPENROUTER_URL = "https://openslate.company.com/api/generate"
 OPENROUTER_API_KEY = "YOUR_API_KEY"
 MODEL_NAME = "YOUR_MODEL"
 
@@ -44,13 +44,13 @@ with open(KEY_FILE, "rb") as f:
 cipher = Fernet(key)
 
 # =====================================================
-# OPENSLATE CLIENT
+# OPENROUTER CLIENT
 # =====================================================
 
 def call_llm(prompt):
 
     headers = {
-        "Authorization": f"Bearer {OPENSLATE_API_KEY}",
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
     }
 
@@ -66,7 +66,7 @@ def call_llm(prompt):
     }
 
     response = requests.post(
-        OPENSLATE_URL,
+        OPENROUTER_URL,
         headers=headers,
         json=payload,
         timeout=120
