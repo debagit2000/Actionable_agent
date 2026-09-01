@@ -29,6 +29,10 @@ ollama cp <model name> <name>
 
 -----Operate OLLAMA Model----------------
 
+/api/generate - used for a single prompt 
+/api/chat - role-based conversations
+
+
 curl http://localhost:11434/api/generate \
 -H "Content-Type: application/json" \
 -d '{
@@ -36,6 +40,34 @@ curl http://localhost:11434/api/generate \
 "prompt": "Explain Linux load average briefly.",
 "stream": false
 }'
+
+----Payload example--------------
+payload = {
+        "model": MODEL_NAME,
+        "messages": 
+        [
+          {
+          "role": "system",
+          "content": system_prompt
+          },
+          {
+          "role": "user",
+          "content": user_prompt
+          }
+        ],
+        "stream": False,
+        "options": {
+            "temperature": 0.1,
+            "top_p": 0.9,
+            "num_ctx": 8192
+           },
+        "keep_alive": "10m"
+}
+
+
+
+
+
 
 
 
