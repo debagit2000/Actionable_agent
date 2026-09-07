@@ -90,65 +90,195 @@ def call_llm(prompt):
 def generate_bash_script(issue):
 
     prompt = f"""
-You are a Linux diagnostic script generator.
+You are a Principal Linux Site Reliability Engineer (SRE) and Cloud Operations Expert.
 
-Create an executable, read-only Bash script to investigate this issue:
+Your task is to generate ONE Linux diagnostic bash script that performs an initial server health assessment.
 
-<issue>
-{issue}
-</issue>
+The purpose of this script is to collect system evidence for a second AI model that will perform root cause analysis and generate further troubleshooting actions.
 
-Return only Bash code. Do not use Markdown fences. Do not explain the script.
+IMPORTANT:
 
-Mandatory requirements:
+The script is for information gathering only.
+It must NEVER modify the system.
 
-1. Start exactly with:
-#!/usr/bin/env bash
+OUTPUT RULES:
 
-2. Add:
-set -uo pipefail
+1. Output ONLY executable bash script.
+2. Start with #!/bin/bash
+3. No markdown.
+4. No explanations.
+5. No comments except section headers.
+6. Read-only commands only.
+7. Every command must be wrapped with:
+   timeout 10
+8. Total execution must complete in less than 60 seconds.
+9. Maximum output must remain below 5000 lines.
+10. Never require user interaction.
+11. Never wait indefinitely.
+12. Never run background processes.
+13. Never install packages.
+14. Never modify files.
+15. Never restart, stop, kill, or reload services.
 
-3. Generate at least 8 real diagnostic commands.
-Comments and echo statements do not count as diagnostic commands.
+FORBIDDEN COMMANDS:
 
-4. Every command that could block must use timeout 5.
+rm
+shutdown
+reboot
+poweroff
+halt
+kill
+killall
+pkill
+terraform destroy
+systemctl stop
+systemctl restart
+systemctl reload
+systemctl disable
+tail -f
+journalctl -f
+watch
+top
+htop
+tcpdump
+strace
+lsof without limits
+find /
+du /
+ping
+wget
+curl
+nc
+nmap
+traceroute
+sleep longer than 5 seconds
 
-5. Print a heading before every diagnostic section.
+SCRIPT REQUIREMENTS:
 
-6. Collect live data from the current server.
+Create clearly separated sections using echo statements.
 
-7. Continue if a command fails.
+Collect the following information:
 
-8. Keep output bounded with head, tail, or command-specific limits.
+===== HOST INFORMATION =====
 
-9. Do not use:
-rm, mv, cp, dd, mkfs, kill, pkill, reboot, shutdown, poweroff,
-systemctl stop, systemctl restart, systemctl disable,
-chmod, chown, sudo, su, curl, wget, ssh, scp, eval,
-package managers, file redirection, or AWS write operations.
+hostname
+date
+uptime
 
-For a CPU issue, include actual commands for:
+===== OPERATING SYSTEM =====
 
-- Current date and hostname
-- Uptime and load average
-- CPU count and CPU information
-- Per-process CPU usage
-- Memory usage
-- vmstat
-- Process state summary
-- Load-producing processes
-- Failed systemd units
-- Recent kernel messages related to CPU, lockups, stalls, OOM, or throttling
-- Container CPU usage if Docker exists
-- A final findings summary based on collected values
+/etc/os-release
+kernel version
+architecture
 
-Use commands such as:
-date, hostname, uptime, nproc, lscpu, ps, top, free, vmstat,
-systemctl, journalctl, dmesg, grep, awk, head, sort, docker.
+===== CPU =====
 
-The script must execute commands, not merely describe them.
+CPU count
+load average
+top CPU-consuming processes
 
-Generate the Bash script now.
+===== MEMORY =====
+
+free memory
+swap usage
+virtual memory statistics
+top memory-consuming processes
+
+===== DISK =====
+
+filesystem usage
+inode usage
+block devices
+mount points
+
+===== PROCESS HEALTH =====
+
+top CPU processes
+top memory processes
+running process count
+
+===== NETWORK =====
+
+IP addresses
+routing table
+listening ports
+established connections
+
+===== SERVICES =====
+
+failed systemd services
+recent service failures
+
+===== SYSTEM ERRORS =====
+
+last 50 error messages from journald
+
+===== RESOURCE PRESSURE =====
+
+load average
+memory pressure indicators
+disk pressure indicators
+
+===== SECURITY =====
+
+last successful logins
+last failed logins (limited output)
+
+===== CONTAINER PLATFORM =====
+
+If Docker exists:
+- docker ps (limited output)
+
+If Kubernetes tools exist:
+- kubectl cluster-info (timeout protected)
+
+If ECS agent exists:
+- ECS agent status
+
+===== CLOUD CHECKS =====
+
+If running in AWS:
+- Instance ID
+- Availability Zone
+
+All cloud commands must gracefully fail if IMDS is unavailable.
+
+OUTPUT FORMATTING:
+
+Each section must be wrapped like:
+
+echo "================================="
+echo "CPU INFORMATION"
+echo "================================="
+
+Use commands similar to:
+
+timeout 10 hostname
+timeout 10 uptime
+timeout 10 free -m
+timeout 10 df -h
+timeout 10 df -ih
+timeout 10 lsblk
+timeout 10 ps -eo pid,user,%cpu,%mem,cmd --sort=-%cpu | head -20
+timeout 10 ps -eo pid,user,%cpu,%mem,cmd --sort=-%mem | head -20
+timeout 10 ip addr show
+timeout 10 ip route
+timeout 10 ss -ant
+timeout 10 ss -lntp
+timeout 10 systemctl --failed --no-pager
+timeout 10 journalctl -p err -n 50 --no-pager
+
+The script must be defensive.
+
+If a command may not exist, use:
+
+command -v <command> >/dev/null 2>&1 && <command>
+
+Do not generate troubleshooting actions.
+Do not generate fixes.
+Do not generate recommendations.
+
+Generate only the evidence collection script.
 """
 
     return call_llm(prompt)
