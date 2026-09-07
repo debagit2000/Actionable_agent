@@ -124,36 +124,36 @@ OUTPUT RULES:
 
 FORBIDDEN COMMANDS:
 
-rm
-shutdown
-reboot
-poweroff
-halt
-kill
-killall
-pkill
-terraform destroy
-systemctl stop
-systemctl restart
-systemctl reload
-systemctl disable
-tail -f
-journalctl -f
-watch
-top
-htop
-tcpdump
-strace
-lsof without limits
-find /
-du /
-ping
-wget
-curl
-nc
-nmap
-traceroute
-sleep longer than 5 seconds
+# rm
+# shutdown
+# reboot
+# poweroff
+# halt
+# kill
+# killall
+# pkill
+# terraform destroy
+# systemctl stop
+# systemctl restart
+# systemctl reload
+# systemctl disable
+# tail -f
+# journalctl -f
+# watch
+# top
+# htop
+# tcpdump
+# strace
+# lsof without limits
+# find /
+# du /
+# ping
+# wget
+# curl
+# nc
+# nmap
+# traceroute
+# sleep longer than 5 seconds /. 
 
 SCRIPT REQUIREMENTS:
 
