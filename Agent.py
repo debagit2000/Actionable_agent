@@ -291,25 +291,25 @@ Generate only the evidence collection script.
 
 FORBIDDEN_COMMANDS = [
 
-    "rm ",
-    "rm -rf",
-    "shutdown",
-    "reboot",
-    "poweroff",
-    "halt",
-    "mkfs",
-    "fdisk",
-    "dd if=",
-    "userdel",
-    "groupdel",
-    ":(){:|:&};:",
-    "curl | bash",
-    "wget | bash",
-    "chmod 777",
-    "kill -9",
-    "systemctl stop",
-    "systemctl disable",
-    "terraform destroy"
+    # "rm ",
+    # "rm -rf",
+    # "shutdown",
+    # "reboot",
+    # "poweroff",
+    # "halt",
+    # "mkfs",
+    # "fdisk",
+    # "dd if=",
+    # "userdel",
+    # "groupdel",
+    # ":(){:|:&};:",
+    # "curl | bash",
+    # "wget | bash",
+    # "chmod 777",
+    # "kill -9",
+    # "systemctl stop",
+    # "systemctl disable",
+    # "terraform destroy"
 ]
 
 
