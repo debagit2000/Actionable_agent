@@ -92,8 +92,10 @@ def generate_bash_script(issue):
     prompt = f"""
 You are a Principal Linux Site Reliability Engineer (SRE) and Cloud Operations Expert.
 
-Your task is to generate ONE Linux diagnostic bash script that performs an initial server health assessment.
-
+Your task is to generate ONE Linux diagnostic bash script that performs an initial server health assessment regarding the below issue.
+<issue>
+{issue}
+</issue>
 The purpose of this script is to collect system evidence for a second AI model that will perform root cause analysis and generate further troubleshooting actions.
 
 IMPORTANT:
