@@ -14,7 +14,7 @@ console = Console()
 
 DB_NAME = "incidents.db"
 OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "llama3"
+OLLAMA_MODEL = "qwen2.5:3b"
 
 ###################################################
 # DATABASE
