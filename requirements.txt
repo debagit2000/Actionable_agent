@@ -1,3 +1,5 @@
 requests
 cryptography
 python-dotenv
+watchdog 
+rich 
