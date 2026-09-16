@@ -1,0 +1,520 @@
+import os
+import re
+import json
+import time
+import sqlite3
+import hashlib
+import threading
+import requests
+
+from rich.console import Console
+from rich.table import Table
+
+console = Console()
+
+DB_NAME = "incidents.db"
+OLLAMA_URL = "http://localhost:11434/api/generate"
+OLLAMA_MODEL = "llama3"
+
+###################################################
+# DATABASE
+###################################################
+
+def init_db():
+    conn = sqlite3.connect(DB_NAME)
+
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS incidents(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        fingerprint TEXT UNIQUE,
+        severity TEXT,
+        source_log TEXT,
+        error_message TEXT,
+        ai_summary TEXT,
+        status TEXT DEFAULT 'OPEN',
+        occurrence_count INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+###################################################
+# LOG NORMALIZATION
+###################################################
+
+def normalize_log(log_line):
+
+    text = log_line.lower()
+
+    # Remove IPs
+    text = re.sub(r'\d+\.\d+\.\d+\.\d+', '', text)
+
+    # Remove numbers
+    text = re.sub(r'\d+', '', text)
+
+    # Remove extra spaces
+    text = re.sub(r'\s+', ' ', text)
+
+    return text.strip()
+
+
+def generate_fingerprint(log_line):
+
+    normalized = normalize_log(log_line)
+
+    return hashlib.sha256(
+        normalized.encode()
+    ).hexdigest()
+
+
+###################################################
+# OLLAMA ANALYSIS
+###################################################
+
+def analyze_log_with_ollama(log_line):
+
+    prompt = f"""
+You are an IT Incident Management AI.
+
+Analyze the following log.
+
+Log:
+{log_line}
+
+Rules:
+1. Create incident ONLY for real warnings or errors.
+2. Ignore informational events.
+3. Ignore successful operations.
+4. Ignore startup messages.
+5. Return valid JSON only.
+
+Format:
+
+{{
+ "create_incident": true,
+ "severity":"CRITICAL|HIGH|MEDIUM|LOW",
+ "summary":"short summary"
+}}
+"""
+
+    try:
+        response = requests.post(
+            OLLAMA_URL,
+            json={
+                "model": OLLAMA_MODEL,
+                "prompt": prompt,
+                "stream": False
+            },
+            timeout=60
+        )
+
+        data = response.json()
+
+        result = data.get("response", "")
+
+        start = result.find("{")
+        end = result.rfind("}") + 1
+
+        cleaned = result[start:end]
+
+        return json.loads(cleaned)
+
+    except Exception as ex:
+
+        console.print(
+            f"[red]Ollama Error:[/red] {ex}"
+        )
+
+        return {
+            "create_incident": False
+        }
+
+
+###################################################
+# INCIDENT OPERATIONS
+###################################################
+
+def incident_exists(fp):
+
+    conn = sqlite3.connect(DB_NAME)
+
+    cur = conn.cursor()
+
+    cur.execute(
+        "SELECT id FROM incidents WHERE fingerprint=? AND status='OPEN'",
+        (fp,)
+    )
+
+    row = cur.fetchone()
+
+    conn.close()
+
+    return row
+
+
+def increment_occurrence(fp):
+
+    conn = sqlite3.connect(DB_NAME)
+
+    conn.execute("""
+        UPDATE incidents
+        SET occurrence_count=occurrence_count+1
+        WHERE fingerprint=?
+    """, (fp,))
+
+    conn.commit()
+    conn.close()
+
+
+def create_incident(
+        fp,
+        severity,
+        source_log,
+        error_message,
+        summary):
+
+    conn = sqlite3.connect(DB_NAME)
+
+    conn.execute("""
+    INSERT INTO incidents(
+        fingerprint,
+        severity,
+        source_log,
+        error_message,
+        ai_summary
+    )
+    VALUES(?,?,?,?,?)
+    """,
+    (
+        fp,
+        severity,
+        source_log,
+        error_message,
+        summary
+    ))
+
+    conn.commit()
+    conn.close()
+
+
+###################################################
+# INCIDENT VIEW
+###################################################
+
+def show_incidents():
+
+    conn = sqlite3.connect(DB_NAME)
+
+    rows = conn.execute("""
+        SELECT
+        id,
+        severity,
+        ai_summary,
+        status,
+        occurrence_count,
+        created_at
+        FROM incidents
+        ORDER BY id DESC
+    """).fetchall()
+
+    table = Table(title="Incident List")
+
+    table.add_column("ID")
+    table.add_column("Severity")
+    table.add_column("Summary")
+    table.add_column("Status")
+    table.add_column("Count")
+    table.add_column("Created")
+
+    for row in rows:
+        table.add_row(
+            str(row[0]),
+            row[1],
+            row[2],
+            row[3],
+            str(row[4]),
+            row[5]
+        )
+
+    console.print(table)
+
+    conn.close()
+
+
+###################################################
+# CLOSE INCIDENT
+###################################################
+
+def close_incident():
+
+    inc_id = input(
+        "Incident ID to close: "
+    )
+
+    conn = sqlite3.connect(DB_NAME)
+
+    conn.execute(
+        "UPDATE incidents SET status='CLOSED' WHERE id=?",
+        (inc_id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    console.print(
+        f"[green]Incident {inc_id} closed[/green]"
+    )
+
+###################################################
+# STATISTICS
+###################################################
+
+def show_stats():
+
+    conn = sqlite3.connect(DB_NAME)
+
+    total = conn.execute(
+        "SELECT COUNT(*) FROM incidents"
+    ).fetchone()[0]
+
+    open_count = conn.execute(
+        "SELECT COUNT(*) FROM incidents WHERE status='OPEN'"
+    ).fetchone()[0]
+
+    closed_count = conn.execute(
+        "SELECT COUNT(*) FROM incidents WHERE status='CLOSED'"
+    ).fetchone()[0]
+
+    console.print()
+    console.print(f"Total Incidents : {total}")
+    console.print(f"Open Incidents  : {open_count}")
+    console.print(f"Closed Incidents: {closed_count}")
+    console.print()
+
+    conn.close()
+
+
+###################################################
+# MONITORING
+###################################################
+
+def process_log_line(log_path, line):
+
+    upper = line.upper()
+
+    if "ERROR" not in upper and "WARN" not in upper:
+        return
+
+    console.print(
+        f"\n[yellow]Detected:[/yellow] {line.strip()}"
+    )
+
+    ai_result = analyze_log_with_ollama(line)
+
+    if not ai_result.get(
+            "create_incident",
+            False):
+        console.print(
+            "[blue]AI rejected incident[/blue]"
+        )
+        return
+
+    severity = ai_result.get(
+        "severity",
+        "LOW"
+    )
+
+    summary = ai_result.get(
+        "summary",
+        "Unknown Issue"
+    )
+
+    fp = generate_fingerprint(line)
+
+    if incident_exists(fp):
+
+        increment_occurrence(fp)
+
+        console.print(
+            "[cyan]Duplicate Incident detected. Occurrence incremented.[/cyan]"
+        )
+        return
+
+    create_incident(
+        fp,
+        severity,
+        log_path,
+        line.strip(),
+        summary
+    )
+
+    console.print(
+        f"[green]Incident Created[/green]"
+    )
+
+    console.print(
+        f"Severity : {severity}"
+    )
+
+    console.print(
+        f"Summary  : {summary}"
+    )
+
+
+def monitor_log(log_path):
+
+    console.print(
+        f"\n[green]Monitoring Started[/green]"
+    )
+
+    with open(log_path, "r", encoding="utf-8") as file:
+
+        file.seek(0, os.SEEK_END)
+
+        while True:
+
+            line = file.readline()
+
+            if not line:
+                time.sleep(1)
+                continue
+
+            process_log_line(
+                log_path,
+                line
+            )
+
+###################################################
+# SEARCH INCIDENT
+###################################################
+
+def search_incident():
+
+    keyword = input(
+        "Enter keyword: "
+    )
+
+    conn = sqlite3.connect(DB_NAME)
+
+    rows = conn.execute("""
+        SELECT
+        id,
+        severity,
+        ai_summary,
+        occurrence_count
+        FROM incidents
+        WHERE ai_summary like ?
+    """, (f"%{keyword}%", )
+    ).fetchall()
+
+    table = Table(title="Search Result")
+
+    table.add_column("ID")
+    table.add_column("Severity")
+    table.add_column("Summary")
+    table.add_column("Count")
+
+    for row in rows:
+        table.add_row(
+            str(row[0]),
+            row[1],
+            row[2],
+            str(row[3])
+        )
+
+    console.print(table)
+
+    conn.close()
+
+###################################################
+# MAIN MENU
+###################################################
+
+def main():
+
+    init_db()
+
+    console.print(
+        "\n[bold green]AI Incident Monitoring System[/bold green]"
+    )
+
+    log_path = input(
+        "\nEnter Log File Path: "
+    )
+
+    if not os.path.exists(log_path):
+
+        console.print(
+            "[red]File not found.[/red]"
+        )
+
+        return
+
+    monitor_thread = None
+
+    while True:
+
+        console.print("\n")
+        console.print("1. Start Monitoring")
+        console.print("2. View Incidents")
+        console.print("3. Search Incident")
+        console.print("4. Close Incident")
+        console.print("5. Statistics")
+        console.print("6. Exit")
+
+        choice = input(
+            "\nSelect option: "
+        )
+
+        if choice == "1":
+
+            if (
+                monitor_thread is None
+                or not monitor_thread.is_alive()
+            ):
+
+                monitor_thread = threading.Thread(
+                    target=monitor_log,
+                    args=(log_path,),
+                    daemon=True
+                )
+
+                monitor_thread.start()
+
+                console.print(
+                    "[green]Monitor Running in Background[/green]"
+                )
+
+            else:
+                console.print(
+                    "[yellow]Already Running[/yellow]"
+                )
+
+        elif choice == "2":
+            show_incidents()
+
+        elif choice == "3":
+            search_incident()
+
+        elif choice == "4":
+            close_incident()
+
+        elif choice == "5":
+            show_stats()
+
+        elif choice == "6":
+            console.print(
+                "[red]Exiting...[/red]"
+            )
+            break
+
+        else:
+            console.print(
+                "[red]Invalid Choice[/red]"
+            )
+
+
+if __name__ == "__main__":
+    main()
